@@ -8,6 +8,19 @@ function maskKey(key: string | null | undefined): string | null {
   return '****' + key.slice(-4);
 }
 
+// Debug: check env vars (remove after fixing)
+export async function OPTIONS() {
+  return NextResponse.json({
+    hasTursoUrl: !!process.env.TURSO_DATABASE_URL,
+    tursoUrlPrefix: (process.env.TURSO_DATABASE_URL || '').slice(0, 20),
+    hasAuthToken: !!process.env.TURSO_AUTH_TOKEN,
+    hasEncKey: !!process.env.ENCRYPTION_KEY,
+    hasDbUrl: !!process.env.DATABASE_URL,
+    dbUrlPrefix: (process.env.DATABASE_URL || '').slice(0, 20),
+    nodeEnv: process.env.NODE_ENV,
+  });
+}
+
 export async function GET() {
   try {
     const settings = await prisma.settings.findUnique({ where: { id: 'default' } });
