@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { randomUUID } from 'crypto';
+import { uploadToR2 } from '@/lib/r2';
 
 export async function POST(
   request: NextRequest,
@@ -25,27 +24,22 @@ export async function POST(
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'trades', tradeId);
-    await mkdir(uploadDir, { recursive: true });
-
     const created = [];
 
     for (const file of files) {
-      const ext = path.extname(file.name) || '';
+      const ext = file.name.includes('.') ? '.' + file.name.split('.').pop() : '';
       const fileName = randomUUID() + ext;
-      const filePath = path.join(uploadDir, fileName);
+      const key = `trades/${tradeId}/${fileName}`;
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, buffer);
-
-      const relativeFilePath = `/uploads/trades/${tradeId}/${fileName}`;
+      const url = await uploadToR2(key, buffer, file.type || 'application/octet-stream');
 
       const image = await prisma.tradeImage.create({
         data: {
           tradeId,
           fileName,
           originalName: file.name,
-          filePath: relativeFilePath,
+          filePath: url,
           fileSize: buffer.length,
           mimeType: file.type || 'application/octet-stream',
           imageType,

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { deleteFromR2 } from '@/lib/r2';
 
 export async function DELETE(
   _request: NextRequest,
@@ -18,13 +17,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     }
 
-    // Delete file from disk
+    // Extract R2 key from filePath URL or use stored fileName
+    const key = `trades/${tradeId}/${image.fileName}`;
     try {
-      const absolutePath = path.join(process.cwd(), 'public', image.filePath);
-      await unlink(absolutePath);
-    } catch (fileError) {
-      // File may already be missing — log but continue with DB deletion
-      console.warn('[DELETE image] Could not delete file:', fileError);
+      await deleteFromR2(key);
+    } catch (err) {
+      console.warn('[DELETE image] Could not delete from R2:', err);
     }
 
     await prisma.tradeImage.delete({ where: { id: imageId } });
