@@ -15,8 +15,8 @@
     "@base-ui/react": "^1.3.0",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.17.2",
-    "@prisma/adapter-libsql": "^7.5.0",
-    "@prisma/client": "^7.5.0",
+    "@prisma/adapter-libsql": "^5.22.0",
+    "@prisma/client": "^5.22.0",
     "@tanstack/react-query": "^5.95.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -44,7 +44,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
-    "prisma": "^7.5.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
