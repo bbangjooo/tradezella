@@ -8,18 +8,6 @@ function maskKey(key: string | null | undefined): string | null {
   return '****' + key.slice(-4);
 }
 
-// Debug: check env vars (remove after fixing)
-export async function OPTIONS() {
-  return NextResponse.json({
-    hasTursoUrl: !!process.env.TURSO_DATABASE_URL,
-    tursoUrlPrefix: (process.env.TURSO_DATABASE_URL || '').slice(0, 20),
-    hasAuthToken: !!process.env.TURSO_AUTH_TOKEN,
-    hasEncKey: !!process.env.ENCRYPTION_KEY,
-    hasDbUrl: !!process.env.DATABASE_URL,
-    dbUrlPrefix: (process.env.DATABASE_URL || '').slice(0, 20),
-    nodeEnv: process.env.NODE_ENV,
-  });
-}
 
 export async function GET() {
   try {
@@ -101,17 +89,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5).join('\n') : '';
     console.error('[POST /api/settings]', msg);
-    return NextResponse.json({
-      error: 'Failed to save settings',
-      detail: msg,
-      stack,
-      envDebug: {
-        tursoUrl: (process.env.TURSO_DATABASE_URL || '').slice(0, 25),
-        dbUrl: (process.env.DATABASE_URL || '').slice(0, 25),
-        hasToken: !!process.env.TURSO_AUTH_TOKEN,
-      }
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save settings', detail: msg }, { status: 500 });
   }
 }
