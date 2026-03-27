@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
+import { createTursoHttpClient } from './turso-http-client'
 
 let _prisma: PrismaClient | undefined
 
@@ -18,12 +18,9 @@ function getPrismaClient(): PrismaClient {
     return _prisma
   }
 
-  // Always use https:// for HTTP transport (works in all serverless environments)
-  const url = rawUrl.replace('libsql://', 'https://')
   const authToken = process.env.TURSO_AUTH_TOKEN || ''
-
-  const libsql = createClient({ url, authToken })
-  const adapter = new PrismaLibSQL(libsql)
+  const client = createTursoHttpClient(rawUrl, authToken)
+  const adapter = new PrismaLibSQL(client as any)
   _prisma = new PrismaClient({ adapter })
   return _prisma
 }
@@ -32,7 +29,6 @@ function getPrismaClient(): PrismaClient {
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop: string) {
     const client = getPrismaClient()
-    const value = (client as any)[prop]
-    return value
+    return (client as any)[prop]
   },
 })
