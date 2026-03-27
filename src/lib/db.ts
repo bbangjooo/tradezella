@@ -1,27 +1,38 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
 
-function createPrismaClient() {
+let _prisma: PrismaClient | undefined
+
+function getPrismaClient(): PrismaClient {
+  if (_prisma) return _prisma
+
   const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
+  const authToken = process.env.TURSO_AUTH_TOKEN
 
   if (!url) {
-    throw new Error('Database URL not configured. Set TURSO_DATABASE_URL or DATABASE_URL.')
+    throw new Error(
+      `Database URL not configured. TURSO_DATABASE_URL=${!!process.env.TURSO_DATABASE_URL}, DATABASE_URL=${!!process.env.DATABASE_URL}`
+    )
   }
 
-  const authToken = process.env.TURSO_AUTH_TOKEN
+  console.log(`[db] Connecting to: ${url.slice(0, 30)}...`)
 
   const adapter = new PrismaLibSql({
     url,
     ...(authToken ? { authToken } : {}),
   })
-  return new PrismaClient({ adapter })
+
+  _prisma = new PrismaClient({ adapter })
+  return _prisma
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-// Lazy initialization - only create client when first accessed
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient()
+    const value = (client as any)[prop]
+    if (typeof value === 'function') {
+      return value.bind(client)
+    }
+    return value
+  },
+})
