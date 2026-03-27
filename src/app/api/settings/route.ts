@@ -101,7 +101,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('[POST /api/settings]', msg, error);
-    return NextResponse.json({ error: 'Failed to save settings', detail: msg }, { status: 500 });
+    const stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5).join('\n') : '';
+    console.error('[POST /api/settings]', msg);
+    return NextResponse.json({
+      error: 'Failed to save settings',
+      detail: msg,
+      stack,
+      envDebug: {
+        tursoUrl: (process.env.TURSO_DATABASE_URL || '').slice(0, 25),
+        dbUrl: (process.env.DATABASE_URL || '').slice(0, 25),
+        hasToken: !!process.env.TURSO_AUTH_TOKEN,
+      }
+    }, { status: 500 });
   }
 }
