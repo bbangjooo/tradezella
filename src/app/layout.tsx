@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'TradeZella',
-  description: 'OKX Trading Journal & Dashboard',
+  title: '뇌동방지턱',
+  description: 'OKX 트레이딩 저널 & 대시보드',
 };
 
 export default function RootLayout({

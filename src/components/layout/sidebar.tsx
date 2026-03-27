@@ -31,7 +31,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-5 border-b border-zinc-800">
         <TrendingUp className="w-6 h-6 text-emerald-400" />
-        <span className="text-lg font-bold text-white">TradeZella</span>
+        <span className="text-lg font-bold text-white">뇌동방지턱</span>
       </div>
 
       {/* Navigation */}
