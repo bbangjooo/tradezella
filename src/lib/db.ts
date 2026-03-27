@@ -21,7 +21,9 @@ function getPrismaClient(): PrismaClient {
   }
 
   // For Turso, use libsql adapter
-  const libsql = createClient({ url, authToken })
+  // Convert libsql:// to https:// for serverless environments
+  const resolvedUrl = url.startsWith('libsql://') ? url.replace('libsql://', 'https://') : url
+  const libsql = createClient({ url: resolvedUrl, authToken })
   const adapter = new PrismaLibSQL(libsql)
   _prisma = new PrismaClient({ adapter })
   return _prisma
