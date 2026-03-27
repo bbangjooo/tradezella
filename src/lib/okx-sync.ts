@@ -172,7 +172,7 @@ export async function syncTrades(userId: string): Promise<SyncResult> {
       const orderId: string = pos.posId;
 
       // Check for duplicates
-      const existing = await prisma.trade.findUnique({ where: { orderId } });
+      const existing = await prisma.trade.findFirst({ where: { userId, orderId } });
       if (existing) {
         result.skipped++;
         continue;

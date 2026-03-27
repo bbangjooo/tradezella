@@ -85,7 +85,7 @@ model Trade {
   id             String   @id @default(uuid())
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderId        String?  @unique
+  orderId        String?
   clOrdId        String?
   instId         String
   instType       String
@@ -113,6 +113,7 @@ model Trade {
   images         TradeImage[]
   checklists     TradeChecklist[]
 
+  @@unique([userId, orderId])
   @@index([userId])
   @@index([entryTime])
   @@index([symbol])

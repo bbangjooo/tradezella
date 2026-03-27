@@ -69,7 +69,7 @@ export default function TradesPage() {
   const [symbol, setSymbol] = useState('');
   const [side, setSide] = useState('all');
   const [result, setResult] = useState('all');
-  const [dateFrom, setDateFrom] = useState('2026-03-26');
+  const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>('entryTime');
