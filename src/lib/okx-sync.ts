@@ -169,7 +169,8 @@ export async function syncTrades(userId: string): Promise<SyncResult> {
   // 4. Map and upsert each position
   for (const pos of filteredPositions) {
     try {
-      const orderId: string = pos.posId;
+      // Use posId + uTime as unique key (posId can be reused across positions)
+      const orderId: string = `${pos.posId}-${pos.uTime}`;
 
       // Check for duplicates
       const existing = await prisma.trade.findFirst({ where: { userId, orderId } });
