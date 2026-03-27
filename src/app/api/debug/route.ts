@@ -18,5 +18,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ results, libsqlVersion: require('@libsql/client/package.json').version });
+  return NextResponse.json({ results });
 }
