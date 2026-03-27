@@ -1,41 +1,39 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
+import { createClient, type Client } from '@libsql/client'
 
 let _prisma: PrismaClient | undefined
+
+function createTursoClient(): Client {
+  const rawUrl = process.env.TURSO_DATABASE_URL || ''
+  const authToken = process.env.TURSO_AUTH_TOKEN || ''
+  // Always use https:// for HTTP transport (works in all environments)
+  const url = rawUrl.replace('libsql://', 'https://')
+  return createClient({ url, authToken })
+}
 
 function getPrismaClient(): PrismaClient {
   if (_prisma) return _prisma
 
-  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
-  const authToken = process.env.TURSO_AUTH_TOKEN
+  const rawUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
 
-  if (!url) {
+  if (!rawUrl) {
     throw new Error('Database URL not configured.')
   }
 
-  // For local dev with file:// URL, don't use adapter
-  if (url.startsWith('file:')) {
+  if (rawUrl.startsWith('file:')) {
     _prisma = new PrismaClient()
     return _prisma
   }
 
-  // For Turso, use libsql adapter
-  // Convert libsql:// to https:// for serverless environments
-  const resolvedUrl = url.startsWith('libsql://') ? url.replace('libsql://', 'https://') : url
-  const libsql = createClient({ url: resolvedUrl, authToken })
+  const libsql = createTursoClient()
   const adapter = new PrismaLibSQL(libsql)
   _prisma = new PrismaClient({ adapter })
   return _prisma
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop) {
-    const client = getPrismaClient()
-    const value = (client as any)[prop]
-    if (typeof value === 'function') {
-      return value.bind(client)
-    }
-    return value
-  },
-})
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
+
+export const prisma = globalForPrisma.prisma ?? getPrismaClient()
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
