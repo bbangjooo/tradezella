@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
+import { createClient } from '@libsql/client'
 
 let _prisma: PrismaClient | undefined
 
@@ -17,40 +18,13 @@ function getPrismaClient(): PrismaClient {
     return _prisma
   }
 
+  const url = rawUrl.replace('libsql://', 'https://')
   const authToken = process.env.TURSO_AUTH_TOKEN || ''
 
-  // Patch globalThis.URL if @libsql/client fails with "Invalid URL"
-  // This happens because Turbopack's bundled URL doesn't support libsql:// or certain https:// formats
-  const OriginalURL = globalThis.URL
-  try {
-    // Temporarily wrap URL to handle the Turso domain
-    const httpsUrl = rawUrl.replace('libsql://', 'https://')
-
-    globalThis.URL = class PatchedURL extends OriginalURL {
-      constructor(input: string | URL, base?: string | URL) {
-        try {
-          super(input, base)
-        } catch {
-          // If URL parsing fails, try with https:// prefix
-          const str = String(input)
-          if (str.includes('turso.io') && !str.startsWith('http')) {
-            super('https://' + str)
-          } else {
-            throw new TypeError('Invalid URL')
-          }
-        }
-      }
-    } as any
-
-    const { createClient } = require('@libsql/client')
-    const libsql = createClient({ url: httpsUrl, authToken })
-    const adapter = new PrismaLibSQL(libsql)
-    _prisma = new PrismaClient({ adapter })
-  } finally {
-    globalThis.URL = OriginalURL
-  }
-
-  return _prisma!
+  const libsql = createClient({ url, authToken })
+  const adapter = new PrismaLibSQL(libsql)
+  _prisma = new PrismaClient({ adapter })
+  return _prisma
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
