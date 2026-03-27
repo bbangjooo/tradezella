@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function GET() {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const templates = await prisma.checklistTemplate.findMany({
+      where: { userId: user.id },
       include: {
         items: {
           orderBy: { sortOrder: 'asc' },
@@ -21,11 +26,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const body = await request.json();
     const { name, phase, isActive, sortOrder, items } = body;
 
     const template = await prisma.checklistTemplate.create({
       data: {
+        userId: user.id,
         name,
         phase: phase ?? 'pre',
         isActive: isActive ?? true,

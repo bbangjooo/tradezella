@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { uploadToR2 } from '@/lib/r2';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id: tradeId } = await params;
 
-    const trade = await prisma.trade.findUnique({ where: { id: tradeId } });
+    const trade = await prisma.trade.findFirst({ where: { id: tradeId, userId: user.id } });
     if (!trade) {
       return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
     }
@@ -62,7 +66,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id: tradeId } = await params;
+
+    const trade = await prisma.trade.findFirst({ where: { id: tradeId, userId: user.id } });
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+    }
 
     const images = await prisma.tradeImage.findMany({
       where: { tradeId },

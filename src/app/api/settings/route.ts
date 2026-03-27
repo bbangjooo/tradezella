@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
-import { syncTrades } from '@/lib/okx-sync';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 function maskKey(key: string | null | undefined): string | null {
   if (!key) return null;
@@ -12,11 +12,13 @@ function maskKey(key: string | null | undefined): string | null {
 
 export async function GET() {
   try {
-    const settings = await prisma.settings.findUnique({ where: { id: 'default' } });
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
+    const settings = await prisma.settings.findUnique({ where: { userId: user.id } });
 
     if (!settings) {
       return NextResponse.json({
-        id: 'default',
         okxApiKey: null,
         okxSecretKey: null,
         okxPassphrase: null,
@@ -45,6 +47,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const body = await request.json();
     const { okxApiKey, okxSecretKey, okxPassphrase, syncIntervalMin, autoSync } = body;
 
@@ -74,17 +79,10 @@ export async function POST(request: NextRequest) {
     data.updatedAt = new Date();
 
     const settings = await prisma.settings.upsert({
-      where: { id: 'default' },
+      where: { userId: user.id },
       update: data,
-      create: { id: 'default', ...data },
+      create: { userId: user.id, ...data },
     });
-
-    // Auto-sync when API keys are first saved
-    if (okxApiKey && okxSecretKey && okxPassphrase) {
-      syncTrades().catch((err) => {
-        console.error('[auto-sync after settings save]', err);
-      });
-    }
 
     return NextResponse.json({
       id: settings.id,

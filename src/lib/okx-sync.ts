@@ -34,11 +34,11 @@ function mapSide(posSide: string, side: string): string {
   return side.toLowerCase();
 }
 
-export async function syncTrades(): Promise<SyncResult> {
+export async function syncTrades(userId: string): Promise<SyncResult> {
   const result: SyncResult = { synced: 0, skipped: 0, errors: [], log: [] };
 
   // 1. Read credentials from Settings
-  const settings = await prisma.settings.findUnique({ where: { id: 'default' } });
+  const settings = await prisma.settings.findUnique({ where: { userId } });
 
   if (
     !settings?.okxApiKey ||
@@ -199,6 +199,7 @@ export async function syncTrades(): Promise<SyncResult> {
 
       await prisma.trade.create({
         data: {
+          userId,
           orderId,
           instId: pos.instId ?? '',
           instType: pos.instType ?? 'SWAP',
@@ -242,6 +243,7 @@ export async function syncTrades(): Promise<SyncResult> {
       // Get today's trade stats
       const todayTrades = await prisma.trade.findMany({
         where: {
+          userId,
           entryTime: { gte: today },
         },
       });
@@ -249,7 +251,7 @@ export async function syncTrades(): Promise<SyncResult> {
       const dailyFee = todayTrades.reduce((sum, t) => sum + t.fee, 0);
 
       await prisma.dailySnapshot.upsert({
-        where: { date: today },
+        where: { userId_date: { userId, date: today } },
         update: {
           totalBalance: totalEq,
           dailyPnl,
@@ -257,6 +259,7 @@ export async function syncTrades(): Promise<SyncResult> {
           tradeCount: todayTrades.length,
         },
         create: {
+          userId,
           date: today,
           totalBalance: totalEq,
           dailyPnl,
@@ -272,7 +275,7 @@ export async function syncTrades(): Promise<SyncResult> {
   // 6. Update lastSyncAt
   try {
     await prisma.settings.update({
-      where: { id: 'default' },
+      where: { userId },
       data: { lastSyncAt: new Date() },
     });
   } catch {

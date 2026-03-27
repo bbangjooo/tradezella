@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { calcAllStats, calcHourlyStats } from '@/lib/calculations';
 import { Prisma } from '@prisma/client';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { searchParams } = new URL(request.url);
     const from = searchParams.get('from');
     const to = searchParams.get('to');
 
-    const where: Prisma.TradeWhereInput = {};
+    const where: Prisma.TradeWhereInput = { userId: user.id };
 
     if (from || to) {
       where.entryTime = {};

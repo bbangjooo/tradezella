@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { calcEquityCurve } from '@/lib/calculations';
 import { Prisma } from '@prisma/client';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { searchParams } = new URL(request.url);
     const from = searchParams.get('from');
     const to = searchParams.get('to');
 
-    const where: Prisma.TradeWhereInput = {};
+    const where: Prisma.TradeWhereInput = { userId: user.id };
 
     if (from || to) {
       where.entryTime = {};
@@ -25,7 +29,7 @@ export async function GET(request: NextRequest) {
     const equityCurve = calcEquityCurve(trades);
 
     // Fetch daily snapshots for asset value overlay
-    const snapshotWhere: Prisma.DailySnapshotWhereInput = {};
+    const snapshotWhere: Prisma.DailySnapshotWhereInput = { userId: user.id };
     if (from || to) {
       snapshotWhere.date = {};
       if (from) snapshotWhere.date.gte = new Date(from);

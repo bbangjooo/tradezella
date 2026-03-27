@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { OkxApiClient } from '@/lib/okx-api';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function GET() {
   try {
-    const settings = await prisma.settings.findUnique({ where: { id: 'default' } });
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
+    const settings = await prisma.settings.findUnique({ where: { userId: user.id } });
 
     if (
       !settings?.okxApiKey ||

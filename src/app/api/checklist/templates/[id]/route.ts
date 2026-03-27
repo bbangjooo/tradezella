@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id } = await params;
     const body = await request.json();
     const { name, phase, isActive, sortOrder, items } = body;
 
-    const existing = await prisma.checklistTemplate.findUnique({ where: { id } });
+    const existing = await prisma.checklistTemplate.findFirst({ where: { id, userId: user.id } });
     if (!existing) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
@@ -53,9 +57,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id } = await params;
 
-    const existing = await prisma.checklistTemplate.findUnique({ where: { id } });
+    const existing = await prisma.checklistTemplate.findFirst({ where: { id, userId: user.id } });
     if (!existing) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }

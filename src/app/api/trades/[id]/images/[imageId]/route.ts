@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { deleteFromR2 } from '@/lib/r2';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id: tradeId, imageId } = await params;
 
     const image = await prisma.tradeImage.findFirst({
-      where: { id: imageId, tradeId },
+      where: { id: imageId, tradeId, trade: { userId: user.id } },
     });
 
     if (!image) {
@@ -39,12 +43,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id: tradeId, imageId } = await params;
     const body = await request.json();
     const { imageType, caption } = body;
 
     const existing = await prisma.tradeImage.findFirst({
-      where: { id: imageId, tradeId },
+      where: { id: imageId, tradeId, trade: { userId: user.id } },
     });
 
     if (!existing) {

@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id: tradeId } = await params;
+
+    const trade = await prisma.trade.findFirst({ where: { id: tradeId, userId: user.id } });
+    if (!trade) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+    }
 
     const checklists = await prisma.tradeChecklist.findMany({
       where: { tradeId },
@@ -30,11 +39,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id: tradeId } = await params;
     const body = await request.json();
     const responses: { checklistItemId: string; response: string }[] = body.responses ?? [];
 
-    const trade = await prisma.trade.findUnique({ where: { id: tradeId } });
+    const trade = await prisma.trade.findFirst({ where: { id: tradeId, userId: user.id } });
     if (!trade) {
       return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
     }

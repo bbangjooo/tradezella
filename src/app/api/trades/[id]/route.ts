@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuthUser, unauthorized } from '@/lib/get-user';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id } = await params;
 
-    const trade = await prisma.trade.findUnique({
-      where: { id },
+    const trade = await prisma.trade.findFirst({
+      where: { id, userId: user.id },
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         checklists: {
@@ -35,9 +39,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id } = await params;
     const body = await request.json();
     const { notes, tags } = body;
+
+    const existing = await prisma.trade.findFirst({ where: { id, userId: user.id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+    }
 
     const data: Record<string, unknown> = {};
     if (notes !== undefined) data.notes = notes;
@@ -60,7 +72,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { id } = await params;
+
+    const existing = await prisma.trade.findFirst({ where: { id, userId: user.id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Trade not found' }, { status: 404 });
+    }
 
     await prisma.trade.delete({ where: { id } });
 
