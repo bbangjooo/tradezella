@@ -2,7 +2,12 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
 
 function createPrismaClient() {
-  const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? ''
+  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
+
+  if (!url) {
+    throw new Error('Database URL not configured. Set TURSO_DATABASE_URL or DATABASE_URL.')
+  }
+
   const authToken = process.env.TURSO_AUTH_TOKEN
 
   const adapter = new PrismaLibSql({
@@ -16,6 +21,7 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Lazy initialization - only create client when first accessed
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
