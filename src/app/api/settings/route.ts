@@ -69,6 +69,8 @@ export async function POST(request: NextRequest) {
     if (syncIntervalMin !== undefined) data.syncIntervalMin = syncIntervalMin;
     if (autoSync !== undefined) data.autoSync = autoSync;
 
+    data.updatedAt = new Date();
+
     const settings = await prisma.settings.upsert({
       where: { id: 'default' },
       update: data,
@@ -85,7 +87,8 @@ export async function POST(request: NextRequest) {
       autoSync: settings.autoSync,
     });
   } catch (error) {
-    console.error('[POST /api/settings]', error);
-    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[POST /api/settings]', msg, error);
+    return NextResponse.json({ error: 'Failed to save settings', detail: msg }, { status: 500 });
   }
 }

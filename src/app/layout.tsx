@@ -13,6 +13,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: '뇌동방지턱',
   description: 'OKX 트레이딩 저널 & 대시보드',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
