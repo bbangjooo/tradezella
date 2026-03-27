@@ -6,6 +6,7 @@ export interface SyncResult {
   synced: number;
   skipped: number;
   errors: string[];
+  log: string[];
 }
 
 /**
@@ -34,7 +35,7 @@ function mapSide(posSide: string, side: string): string {
 }
 
 export async function syncTrades(): Promise<SyncResult> {
-  const result: SyncResult = { synced: 0, skipped: 0, errors: [] };
+  const result: SyncResult = { synced: 0, skipped: 0, errors: [], log: [] };
 
   // 1. Read credentials from Settings
   const settings = await prisma.settings.findUnique({ where: { id: 'default' } });
@@ -72,6 +73,8 @@ export async function syncTrades(): Promise<SyncResult> {
   const allPositions: any[] = [];
   const instTypes = ['SWAP', 'FUTURES', 'MARGIN'];
 
+  const syncLog: string[] = [];
+
   for (const instType of instTypes) {
     let after: string | undefined = undefined;
     try {
@@ -79,11 +82,15 @@ export async function syncTrades(): Promise<SyncResult> {
         const response = await client.getPositionsHistory(instType, after);
 
         if (response.code !== '0') {
-          console.warn(`[okx-sync] positions-history ${instType}: ${response.msg}`);
-          break; // Skip this instType, try next
+          const msg = `positions-history ${instType}: code=${response.code} msg=${response.msg}`;
+          syncLog.push(msg);
+          console.warn(`[okx-sync] ${msg}`);
+          break;
         }
 
         const data: any[] = response.data ?? [];
+        syncLog.push(`positions-history ${instType}: ${data.length} records`);
+
         if (data.length === 0) break;
 
         allPositions.push(...data);
@@ -91,8 +98,9 @@ export async function syncTrades(): Promise<SyncResult> {
         if (data.length < 100) break;
       } while (after);
     } catch (err) {
-      console.warn(`[okx-sync] positions-history ${instType} failed:`, err instanceof Error ? err.message : err);
-      // Continue to next instType
+      const msg = `positions-history ${instType} failed: ${err instanceof Error ? err.message : err}`;
+      syncLog.push(msg);
+      console.warn(`[okx-sync] ${msg}`);
     }
   }
 
@@ -147,6 +155,9 @@ export async function syncTrades(): Promise<SyncResult> {
   } catch (err) {
     console.warn('[okx-sync] fills SPOT failed:', err instanceof Error ? err.message : err);
   }
+
+  syncLog.push(`Total positions fetched: ${allPositions.length}`);
+  result.log = syncLog;
 
   if (allPositions.length === 0) {
     result.errors.push('No positions found from OKX. Check if you have closed positions in the last 90 days.');
@@ -268,5 +279,6 @@ export async function syncTrades(): Promise<SyncResult> {
     // Non-fatal
   }
 
+  result.log = syncLog;
   return result;
 }

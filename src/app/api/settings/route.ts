@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
+import { syncTrades } from '@/lib/okx-sync';
 
 function maskKey(key: string | null | undefined): string | null {
   if (!key) return null;
@@ -77,6 +78,13 @@ export async function POST(request: NextRequest) {
       update: data,
       create: { id: 'default', ...data },
     });
+
+    // Auto-sync when API keys are first saved
+    if (okxApiKey && okxSecretKey && okxPassphrase) {
+      syncTrades().catch((err) => {
+        console.error('[auto-sync after settings save]', err);
+      });
+    }
 
     return NextResponse.json({
       id: settings.id,
