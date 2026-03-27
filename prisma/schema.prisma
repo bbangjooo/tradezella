@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Settings {
+  id               String   @id @default("default")
+  okxApiKey        String?
+  okxSecretKey     String?
+  okxPassphrase    String?
+  okxApiKeyIv      String?
+  okxSecretKeyIv   String?
+  okxPassphraseIv  String?
+  lastSyncAt       DateTime?
+  syncIntervalMin  Int      @default(15)
+  autoSync         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Trade {
+  id             String   @id @default(uuid())
+  orderId        String?  @unique
+  clOrdId        String?
+  instId         String
+  instType       String
+  symbol         String
+  side           String
+  posSide        String?
+  entryPrice     Float
+  exitPrice      Float?
+  quantity       Float
+  leverage       Int      @default(1)
+  realizedPnl    Float    @default(0)
+  fee            Float    @default(0)
+  fundingFee     Float    @default(0)
+  netPnl         Float    @default(0)
+  entryTime      DateTime
+  exitTime       DateTime?
+  holdDuration   Int?
+  status         String   @default("closed")
+  notes          String?
+  tags           String?
+  source         String   @default("okx")
+  rawData        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  images         TradeImage[]
+  checklists     TradeChecklist[]
+
+  @@index([entryTime])
+  @@index([symbol])
+  @@index([status])
+  @@index([side])
+  @@index([instType])
+}
+
+model TradeImage {
+  id           String   @id @default(uuid())
+  tradeId      String
+  trade        Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  fileName     String
+  originalName String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  imageType    String   @default("other")
+  caption      String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([tradeId])
+}
+
+model ChecklistTemplate {
+  id        String          @id @default(uuid())
+  name      String
+  phase     String          @default("pre")
+  isActive  Boolean         @default(true)
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  items     ChecklistItem[]
+}
+
+model ChecklistItem {
+  id         String            @id @default(uuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  text       String
+  category   String            @default("General")
+  sortOrder  Int               @default(0)
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  responses  TradeChecklist[]
+
+  @@index([templateId])
+  @@index([category])
+}
+
+model TradeChecklist {
+  id              String        @id @default(uuid())
+  tradeId         String
+  trade           Trade         @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  checklistItemId String
+  checklistItem   ChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  response        String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([tradeId, checklistItemId])
+  @@index([tradeId])
+}
+
+model DailySnapshot {
+  id            String   @id @default(uuid())
+  date          DateTime @unique
+  totalBalance  Float
+  availBalance  Float?
+  frozenBalance Float?
+  dailyPnl      Float    @default(0)
+  dailyFee      Float    @default(0)
+  tradeCount    Int      @default(0)
+  cumulativePnl Float    @default(0)
+  source        String   @default("calculated")
+  createdAt     DateTime @default(now())
+
+  @@index([date])
+}
