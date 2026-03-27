@@ -164,12 +164,7 @@ export async function syncTrades(userId: string): Promise<SyncResult> {
     return result;
   }
 
-  // 3. Filter positions after KST 2026-03-26 00:00:00 (UTC 2026-03-25 15:00:00)
-  const MIN_TIMESTAMP = new Date('2026-03-25T15:00:00.000Z').getTime();
-  const filteredPositions = allPositions.filter((pos) => {
-    const ts = parseInt(pos.cTime, 10);
-    return !isNaN(ts) && ts >= MIN_TIMESTAMP;
-  });
+  const filteredPositions = allPositions;
 
   // 4. Map and upsert each position
   for (const pos of filteredPositions) {
