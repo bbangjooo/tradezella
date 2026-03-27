@@ -6,22 +6,19 @@ let _prisma: PrismaClient | undefined
 function getPrismaClient(): PrismaClient {
   if (_prisma) return _prisma
 
-  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
+  let url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
   const authToken = process.env.TURSO_AUTH_TOKEN
 
   if (!url) {
-    throw new Error(
-      `Database URL not configured. TURSO_DATABASE_URL=${!!process.env.TURSO_DATABASE_URL}, DATABASE_URL=${!!process.env.DATABASE_URL}`
-    )
+    throw new Error('Database URL not configured.')
   }
 
-  console.log(`[db] Connecting to: ${url.slice(0, 30)}...`)
+  // Vercel serverless may not support libsql:// protocol - convert to https://
+  if (url.startsWith('libsql://')) {
+    url = url.replace('libsql://', 'https://')
+  }
 
-  const adapter = new PrismaLibSql({
-    url,
-    ...(authToken ? { authToken } : {}),
-  })
-
+  const adapter = new PrismaLibSql({ url, authToken })
   _prisma = new PrismaClient({ adapter })
   return _prisma
 }
