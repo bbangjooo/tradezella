@@ -182,7 +182,9 @@ export async function syncTrades(userId: string): Promise<SyncResult> {
       const realizedPnl = parseFloat(pos.realizedPnl ?? '0');
       const fee = parseFloat(pos.fee ?? '0');
       const fundingFee = parseFloat(pos.fundingFee ?? '0');
-      const netPnl = realizedPnl + fee + fundingFee;
+      // Use OKX's pnl field which matches their UI display
+      const okxPnl = parseFloat(pos.pnl ?? '0');
+      const netPnl = okxPnl || (realizedPnl + fee + fundingFee);
 
       const entryTime = new Date(parseInt(pos.cTime, 10));
       const exitTime = pos.uTime ? new Date(parseInt(pos.uTime, 10)) : null;
