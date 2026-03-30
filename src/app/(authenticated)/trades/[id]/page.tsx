@@ -440,14 +440,15 @@ export default function TradeDetailPage() {
               {trade.images.map((image) => (
                 <div
                   key={image.id}
-                  className="group relative overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950"
+                  className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950"
                 >
-                  <img
-                    src={image.filePath}
-                    alt={image.caption || 'Trade screenshot'}
-                    className="aspect-video w-full object-cover"
-                  />
-                  <div className="absolute inset-0 flex items-start justify-end gap-1 bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="group relative">
+                    <img
+                      src={image.filePath}
+                      alt={image.caption || 'Trade screenshot'}
+                      className="aspect-video w-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-start justify-end gap-1 bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       variant="ghost"
                       size="icon-xs"
@@ -464,6 +465,7 @@ export default function TradeDetailPage() {
                     >
                       <X className="h-3 w-3" />
                     </Button>
+                  </div>
                   </div>
                   <div className="space-y-2 p-2">
                     <Input
