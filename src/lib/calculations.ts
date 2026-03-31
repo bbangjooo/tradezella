@@ -115,7 +115,7 @@ export function calcMaxDrawdown(trades: Trade[]): { value: number; percentage: n
     const drawdown = peak - equity;
     if (drawdown > maxDrawdownValue) {
       maxDrawdownValue = drawdown;
-      maxDrawdownPct = peak !== 0 ? (drawdown / peak) * 100 : 0;
+      maxDrawdownPct = peak !== 0 ? Math.min((drawdown / peak) * 100, 100) : 0;
     }
   }
 
